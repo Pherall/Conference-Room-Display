@@ -1,0 +1,123 @@
+function doGet() {
+  const calendarId = 'ENTER_CALENDAR_ID_HERE'; // Replace with your calendar ID
+  const now = new Date();
+  const endOfDay = new Date();
+  endOfDay.setHours(23, 59, 59, 999);
+  const events = CalendarApp.getCalendarById(calendarId).getEvents(now, endOfDay);
+
+  let html = `
+    <html>
+    <head>
+      <script>
+        // Function to reload content periodically using google.script.run
+        function reloadContent() {
+          google.script.run.withSuccessHandler(function(response) {
+            // Update the page content with the new data
+            document.getElementById("eventsTable").innerHTML = response;
+          }).getEventsHTML();  // Call the server-side function to get new event data
+        }
+
+        // Set up periodic updates every 60 seconds
+        setInterval(reloadContent, 60000);
+
+        // Initial content load
+        window.onload = function() {
+          reloadContent(); // Load content on initial page load
+        };
+      </script>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          text-align: center;
+          background-color: #ffffff;
+           margin: 0;
+            padding: 0;
+            position: relative; /* Ensures the body is positioned */
+          }
+
+        body::after {
+            content: "";
+            background-image: url('ENTER_IMG_URL_HERE');
+            background-size: contain; /* Adjusts image size */
+            background-repeat: no-repeat;
+            background-position: bottom right;
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            width: 500px; /* Control image width */
+            height: 500px; /* Control image height */
+            z-index: -1; /* Ensures the image stays in the back */
+          }
+
+        h1 {
+          color: #333;
+        }
+        table {
+          margin: 0 auto;
+          border-collapse: collapse;
+          width: 80%;
+        }
+        th, td {
+          border: 1px solid #ddd;
+          padding: 8px;
+        }
+        th {
+          background-color: #2885C3;
+          color: white;
+        }
+        tr:nth-child(even) {
+          background-color: #f2f2f2;
+        }
+        tr:hover {
+          background-color: #ddd;
+        }
+
+      </style>
+    </head>
+    <body>
+      <h1>Conference Room Schedule</h1>
+      <div id="eventsTable">
+        <!-- Events table content will be dynamically inserted here -->
+      </div>
+    </body>
+    </html>`;
+
+  return HtmlService.createHtmlOutput(html);
+}
+
+function getEventsHTML() {
+  const calendarId = 'ENTER_CALENDAR_ID_HERE'; // Replace with your calendar ID
+  const now = new Date();
+  const endOfDay = new Date();
+  endOfDay.setHours(23, 59, 59, 999);
+  const events = CalendarApp.getCalendarById(calendarId).getEvents(now, endOfDay);
+
+  let eventsHtml = `
+    <table>
+      <tr>
+        <th>Time</th>
+        <th>Event</th>
+        <th>Status</th>
+      </tr>`;
+
+  events.forEach(event => {
+    if (event.getEndTime() > now) {
+      const startTime = event.getStartTime().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const endTime = event.getEndTime().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const title = event.getTitle();
+      const status = now > event.getStartTime() && now < event.getEndTime() ? 'In Progress' : 'Upcoming';
+
+      eventsHtml += `
+          <tr>
+            <td>${startTime} - ${endTime}</td>
+            <td>${title}</td>
+            <td>${status}</td>
+          </tr>`;
+    }
+  });
+
+  eventsHtml += `
+      </table>`;
+  
+  return eventsHtml;  // Return the updated HTML for the events table
+}
